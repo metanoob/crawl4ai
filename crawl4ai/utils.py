@@ -1779,6 +1779,21 @@ def perform_completion_with_backoff(
     if kwargs.get("extra_args"):
         extra_args.update(kwargs["extra_args"])
 
+    if "openrouter" in provider.lower():
+    # Pull API key from env if not already set
+        openrouter_key = os.environ.get("OPENROUTER_API_KEY")
+        if openrouter_key:
+            extra_args["api_key"] = openrouter_key
+    
+        # Force OpenRouter base URL
+        extra_args["api_base"] = "https://openrouter.ai/api/v1"
+    
+        # Add required headers for OpenRouter
+        extra_args["extra_headers"] = {
+            "HTTP-Referer": os.environ.get("HTTP_REFERER", "http://localhost"),  # Your actual app URL
+            "X-Title": os.environ.get("APP_TITLE", "Crawl4AI")  # Your app name
+        }
+
     for attempt in range(max_attempts):
         try:
             response = completion(
