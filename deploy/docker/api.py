@@ -121,13 +121,14 @@ async def process_llm_extraction(
     try:
         # Validate provider
         is_valid, error_msg = validate_llm_provider(config, provider)
+        api_key = os.environ.get('OPENROUTER_API_KEY') or get_llm_api_key(config, provider)
         if not is_valid:
             await redis.hset(f"task:{task_id}", mapping={
                 "status": TaskStatus.FAILED,
                 "error": error_msg
             })
             return
-        api_key = get_llm_api_key(config, provider)
+        
         llm_strategy = LLMExtractionStrategy(
             llm_config=LLMConfig(
                 provider=provider or config["llm"]["provider"],
