@@ -115,7 +115,8 @@ async def process_llm_extraction(
     instruction: str,
     schema: Optional[str] = None,
     cache: str = "0",
-    provider: Optional[str] = None
+    provider: Optional[str] = None,
+    api_key: Optional[str] = None
 ) -> None:
     """Process LLM extraction in background."""
     try:
