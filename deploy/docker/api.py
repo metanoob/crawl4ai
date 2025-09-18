@@ -293,6 +293,12 @@ async def handle_llm_request(
                     }
                 }
             })
+        # Load the API key from env in the main process (where it's available)
+        api_key = os.environ.get('OPENROUTER_API_KEY')
+        if api_key:
+            print(f"[DEBUG] API key loaded in handle_llm_request: {bool(api_key)}")
+        else:
+            return JSONResponse({"error": "OPENROUTER_API_KEY not set nigga"}, status_code=400)
 
         return await create_new_task(
             redis,
@@ -303,7 +309,8 @@ async def handle_llm_request(
             cache,
             base_url,
             config,
-            provider
+            provider,
+            api_key  # <-- Added: Pass the loaded key
         )
 
     except Exception as e:
@@ -348,7 +355,8 @@ async def create_new_task(
     cache: str,
     base_url: str,
     config: dict,
-    provider: Optional[str] = None
+    provider: Optional[str] = None,
+    api_key: Optional[str] = None  # <-- Added: Accept the API key
 ) -> JSONResponse:
     """Create and initialize a new task."""
     decoded_url = unquote(input_path)
@@ -373,7 +381,8 @@ async def create_new_task(
         query,
         schema,
         cache,
-        provider
+        provider,
+        api_key # <-- Added: Pass the API key
     )
 
     return JSONResponse({
