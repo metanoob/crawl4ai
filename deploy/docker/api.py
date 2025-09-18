@@ -46,7 +46,7 @@ from utils import (
 )
 
 import psutil, time
-
+import litellm
 logger = logging.getLogger(__name__)
 
 # --- Helper to get memory ---
@@ -119,6 +119,8 @@ async def process_llm_extraction(
     api_key: Optional[str] = None
 ) -> None:
     """Process LLM extraction in background."""
+    litellm._turn_on_debug()
+    logger.info(f"LiteLLM debugging enabled for task {task_id}")
     try:
         # Validate provider
         if provider.startswith("openrouter"):
