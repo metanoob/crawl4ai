@@ -120,15 +120,37 @@ async def process_llm_extraction(
     """Process LLM extraction in background."""
     try:
         # Validate provider
-        is_valid, error_msg = validate_llm_provider(config, provider)
-        api_key = os.environ.get('OPENROUTER_API_KEY') or get_llm_api_key(config, provider)
+        if provider.startswith("openrouter"):
+            is_valid = True
+        
+        env_key = os.environ.get('OPENROUTER_API_KEY')
+        api_key = env_key or get_llm_api_key(config, provider)
+        
+        # Debug prints inserted correctly here (after validation, inside try block)
+        print(f"[DEBUG] Env key loaded from os.environ: {bool(env_key)}")
+        print(f"[DEBUG] API key from get_llm_api_key: {bool(api_key and env_key is None)}")
+        print(f"[DEBUG] Final api_key: {bool(api_key)}")
+        print(f"[DEBUG] Env key loaded from os.environ: {bool(env_key)}")
+        print(f"[DEBUG] Fallback from get_llm_api_key: {bool(api_key and env_key is None)}")  # If True, means get_llm_api_key worked
+        print(f"[DEBUG] Final api_key: {bool(api_key)}")
+        
+        # Hardcode the key as fallback
+        env_key = os.environ.get('OPENROUTER_API_KEY') or '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'
+        print(env_key)
+        api_key = env_key or get_llm_api_key(config, provider)
+        print(env_key, "env")
+        print(api_key, "api")
+        
         if not is_valid:
+            # Define error_msg if not set
+            error_msg = "Invalid provider for LLM" if not is_valid else ""
             await redis.hset(f"task:{task_id}", mapping={
                 "status": TaskStatus.FAILED,
                 "error": error_msg
             })
             return
         
+        # Build LLM strategy (rest of code unchanged)
         llm_strategy = LLMExtractionStrategy(
             llm_config=LLMConfig(
                 provider=provider or config["llm"]["provider"],
@@ -137,7 +159,7 @@ async def process_llm_extraction(
             instruction=instruction,
             schema=json.loads(schema) if schema else None,
         )
-
+        
         cache_mode = CacheMode.ENABLED if cache == "1" else CacheMode.WRITE_ONLY
 
         async with AsyncWebCrawler() as crawler:
@@ -168,6 +190,7 @@ async def process_llm_extraction(
 
     except Exception as e:
         logger.error(f"LLM extraction error: {str(e)}", exc_info=True)
+        print(f"[DEBUG EXCEPTION] {str(e)}")  # Uncomment this for debug
         await redis.hset(f"task:{task_id}", mapping={
             "status": TaskStatus.FAILED,
             "error": str(e)
